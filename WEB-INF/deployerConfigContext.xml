@@ -108,8 +108,20 @@
           class="org.jasig.cas.authentication.AcceptUsersAuthenticationHandler">
         <property name="users">
             <map>
-                <entry key="casuser" value="Mellon"/>
-		<entry key="juan" value="juan"/>
+                <!-- <entry key="casuser" value="Mellon"/> -->
+                <entry key="joel" value="d0ct0r78"/>
+		        <entry key="maggie" value="p1l0t678"/>
+                <entry key="chris" value="r4d10678"/>
+                <entry key="maurice" value="4stron78"/>
+                <entry key="shelly" value="w41tr3ss"/>
+
+                <entry key="holling" value="c4n4d14n"/>
+                <entry key="ed" value="4l4sk4"/>
+
+                <entry key="ruth" value="w1d0w3r"/>
+                <entry key="marylin" value="c1c3l14n"/>
+                
+
             </map>
         </property>
     </bean>
