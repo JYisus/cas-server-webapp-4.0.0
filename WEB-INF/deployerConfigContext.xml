@@ -61,7 +61,9 @@
                    | set its name to something other than its default name (typically the simple class name).
                    -->
                 <entry key-ref="proxyAuthenticationHandler" value-ref="proxyPrincipalResolver" />
-                <entry key-ref="primaryAuthenticationHandler" value-ref="primaryPrincipalResolver" />
+                <!-- <entry key-ref="primaryAuthenticationHandler" value-ref="primaryPrincipalResolver" /> -->
+                <entry key-ref="ldapAuthenticationHandler" value-ref="primaryPrincipalResolver" />
+                <!-- entry key-ref="ldapAuthenticationHandler" value-ref="primaryPrincipalResolver" -->
             </map>
         </constructor-arg>
 
@@ -92,39 +94,7 @@
           class="org.jasig.cas.authentication.handler.support.HttpBasedServiceCredentialsAuthenticationHandler"
           p:httpClient-ref="httpClient" />
 
-    <!--
-       | TODO: Replace this component with one suitable for your enviroment.
-       |
-       | This component provides authentication for the kind of credential used in your environment. In most cases
-       | credential is a username/password pair that lives in a system of record like an LDAP directory.
-       | The most common authentication handler beans:
-       |
-       | * org.jasig.cas.authentication.LdapAuthenticationHandler
-       | * org.jasig.cas.adaptors.jdbc.QueryDatabaseAuthenticationHandler
-       | * org.jasig.cas.adaptors.x509.authentication.handler.support.X509CredentialsAuthenticationHandler
-       | * org.jasig.cas.support.spnego.authentication.handler.support.JCIFSSpnegoAuthenticationHandler
-       -->
-    <bean id="primaryAuthenticationHandler"
-          class="org.jasig.cas.authentication.AcceptUsersAuthenticationHandler">
-        <property name="users">
-            <map>
-                <!-- <entry key="casuser" value="Mellon"/> -->
-                <entry key="joel" value="d0ct0r78"/>
-		        <entry key="maggie" value="p1l0t678"/>
-                <entry key="chris" value="r4d10678"/>
-                <entry key="maurice" value="4stron78"/>
-                <entry key="shelly" value="w41tr3ss"/>
 
-                <entry key="holling" value="c4n4d14n"/>
-                <entry key="ed" value="4l4sk4"/>
-
-                <entry key="ruth" value="w1d0w3r"/>
-                <entry key="marylin" value="c1c3l14n"/>
-                
-
-            </map>
-        </property>
-    </bean>
 
     <!-- Required for proxy ticket mechanism -->
     <bean id="proxyPrincipalResolver"
@@ -203,4 +173,79 @@
           p:serviceTicketCountWarnThreshold="5000"
           p:sessionCountWarnThreshold="100000" />
     </util:list>
+
+
+
+
+
+    
+
+    <bean id="ldapAuthenticationHandler"  class="org.jasig.cas.authentication.LdapAuthenticationHandler" p:principalIdAttribute="uid" c:authenticator-ref="authenticator">
+        <property name="principalAttributeMap">
+            <map>
+                <!--
+                | This map provides a simple attribute resolution mechanism.
+                | Keys are LDAP attribute names, values are CAS attribute names.
+                | Use this facility instead of a PrincipalResolver if LDAP is
+                | the only attribute source.
+                -->
+                <entry key="member" value="member" />
+                <entry key="mail" value="mail" />
+                <entry key="displayName" value="displayName" />
+            </map>
+        </property>
+    </bean>
+
+    <bean id="authenticator" class="org.ldaptive.auth.Authenticator" c:resolver-ref="dnResolver" c:handler-ref="authHandler" />
+
+    <!--
+    | The following DN format works for many directories, but may need to be
+    | customized.
+    -->
+    <bean id="dnResolver" 
+        class="org.ldaptive.auth.FormatDnResolver" 
+        c:format="uid=%s,${ldap.authn.baseDn}" />
+
+    <bean id="authHandler" 
+        class="org.ldaptive.auth.PooledBindAuthenticationHandler" 
+        p:connectionFactory-ref="pooledLdapConnectionFactory" />
+
+    <bean id="pooledLdapConnectionFactory" 
+        class="org.ldaptive.pool.PooledConnectionFactory" 
+        p:connectionPool-ref="connectionPool" />
+
+    <bean id="connectionPool" 
+        class="org.ldaptive.pool.BlockingConnectionPool" 
+        init-method="initialize" 
+        p:poolConfig-ref="ldapPoolConfig" 
+        p:blockWaitTime="${ldap.pool.blockWaitTime}" 
+        p:validator-ref="searchValidator" 
+        p:pruneStrategy-ref="pruneStrategy" 
+        p:connectionFactory-ref="connectionFactory" />
+
+    <bean id="ldapPoolConfig" 
+        class="org.ldaptive.pool.PoolConfig" 
+        p:minPoolSize="${ldap.pool.minSize}" 
+        p:maxPoolSize="${ldap.pool.maxSize}" 
+        p:validateOnCheckOut="${ldap.pool.validateOnCheckout}" 
+        p:validatePeriodically="${ldap.pool.validatePeriodically}" 
+        p:validatePeriod="${ldap.pool.validatePeriod}" />
+
+    <bean id="connectionFactory" 
+        class="org.ldaptive.DefaultConnectionFactory" 
+        p:connectionConfig-ref="connectionConfig" />
+
+    <!-- <bean id="connectionConfig" class="org.ldaptive.ConnectionConfig" p:ldapUrl="${ldap.url}" p:connectTimeout="${ldap.connectTimeout}" p:useStartTLS="${ldap.useStartTLS}" p:sslConfig-ref="sslConfig" /> -->
+    <bean id="connectionConfig" class="org.ldaptive.ConnectionConfig" p:ldapUrl="${ldap.url}" p:connectTimeout="${ldap.connectTimeout}"  />
+
+    <!-- <bean id="sslConfig" class="org.ldaptive.ssl.SslConfig">
+        <property name="credentialConfig">
+            <bean class="org.ldaptive.ssl.X509CredentialConfig" p:trustCertificates="${ldap.trustedCert}" />
+        </property>
+    </bean> -->
+
+    <bean id="pruneStrategy" class="org.ldaptive.pool.IdlePruneStrategy" p:prunePeriod="${ldap.pool.prunePeriod}" p:idleTime="${ldap.pool.idleTime}" />
+
+    <bean id="searchValidator" class="org.ldaptive.pool.SearchValidator" />
+
 </beans>
